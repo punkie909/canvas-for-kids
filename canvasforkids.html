@@ -154,16 +154,12 @@
 			
 			window.onkeydown = function(e) {
 				var key = (e.which) ? e.which : e.keyCode;
-
-				console.log(key);
-
 				keyDown[key] = true;
 				return false;
 			}
 			
 			window.onkeyup = function(e) {
 				var key = (e.which) ? e.which : e.keyCode;
-
 				if(keyDown[key])
 					delete keyDown[key];
 				return false;
