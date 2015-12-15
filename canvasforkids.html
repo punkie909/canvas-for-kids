@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>CanvasForKids</title>
+	<style type="text/css">
+		html, body {
+			background-color: #1E1E1E;
+		}
+
+		#gamecanvas {
+			position: absolute;
+			top: 50%;
+			left: 50%;
+
+			-webkit-transform: translate(-50%, -50%);
+			-moz-transform: translate(-50%, -50%);
+			transform: translate(-50%, -50%);
+		}
+	</style>
+	<script type="text/javascript">
+		var keyCodes = {
+			backspace: 8,
+			tab: 9,
+			enter: 13,
+			shift: 16,
+			ctrl: 17,
+			alt: 18,
+			escape: 27,
+			space: 32,
+			left: 37,
+			up: 38,
+			right: 39,
+			down: 40,
+			0: 48,
+			1: 49,
+			2: 50,
+			3: 51,
+			4: 52,
+			5: 53,
+			6: 54,
+			7: 55,
+			8: 56,
+			9: 57,
+			a: 65,
+			b: 66,
+			c: 67,
+			d: 68,
+			e: 69,
+			f: 70,
+			g: 71,
+			h: 72,
+			i: 73,
+			j: 74,
+			k: 75,
+			l: 76,
+			m: 77,
+			n: 78,
+			o: 79,
+			p: 80,
+			q: 81,
+			r: 82,
+			s: 83,
+			t: 84,
+			u: 85,
+			v: 86,
+			w: 87,
+			x: 88,
+			y: 89,
+			z: 90 
+		};
+
+		function sprite() { }
+		sprite.prototype.x = 0;
+		sprite.prototype.y = 0;
+		sprite.prototype.width = 0;
+		sprite.prototype.height = 0;
+		sprite.prototype.draw = function(canvas) {
+		};
+		sprite.prototype.colilisionPoint = function(point) {
+			var check = (
+				this.x < point.x &&
+				this.x + this.width > point.x &&
+				this.y < point.y &&
+				this.y + this.height > point.y
+			);
+			return check;
+		};
+		sprite.prototype.colilisionSprite = function(sprite) {
+			var check =
+				this.colilisionPoint({ x: sprite.x, y: sprite.y }) ||
+				this.colilisionPoint({ x: sprite.x, y: sprite.y + sprite.height }) ||
+				this.colilisionPoint({ x: sprite.x + sprite.width, y: sprite.y }) ||
+				this.colilisionPoint({ x: sprite.x + sprite.width, y: sprite.y + sprite.height  });
+			return check;
+		};
+
+		function colorSprite(color) {
+			this.color = color;
+		}
+		colorSprite.prototype = new sprite();
+		colorSprite.prototype.draw = function(canvas) {
+			canvas.fillStyle = this.color;
+			canvas.fillRect(this.x, this.y, this.width, this.height);
+		};
+		
+		function imageSprite(src) {
+			this.image = new Image();
+			this.image.src = src;
+		}
+		imageSprite.prototype = new sprite();
+		imageSprite.prototype.draw = function(canvas) {
+			canvas.drawImage(this.image, this.x, this.y);
+		};
+
+		function textSprite(canvas, text, color, size) {
+			this.color = color;
+			this.size = size;
+			this.canvas = canvas;
+
+			this.updateText(text);
+		}
+		textSprite.prototype = new sprite();
+		textSprite.prototype.draw = function(canvas) {
+			canvas.fillStyle  = this.color;
+			canvas.font = this.size + " sans-serif";
+			canvas.textBaseline = "top";
+			canvas.fillText(this.text, this.x, this.y);
+		};
+		textSprite.prototype.updateText = function(text) {
+			this.text = text;
+			this.canvas.fillStyle  = this.color;
+			this.canvas.font = this.size + " sans-serif";
+			this.canvas.textBaseline = "top";
+			var textSize = this.canvas.measureText(this.text);
+			this.width = textSize.width;
+			this.height = this.size.replace("px","")*1;
+		};
+		
+		var keyDown = {};
+		var state = 0;
+		var screenSize = { width: 0, height: 0 };
+		
+		window.onload = function() {
+			var canvas = document.getElementById("gamecanvas");
+			var context = canvas.getContext("2d");
+			
+			screenSize.width = canvas.width;
+			screenSize.height = canvas.height;
+
+			var poweredBySprite = new textSprite(context, "powered by CanvasForKids", "white", "8px");
+			poweredBySprite.x = screenSize.width - poweredBySprite.width - 5;
+			poweredBySprite.y = screenSize.height - poweredBySprite.height - 5;
+			
+			window.onkeydown = function(e) {
+				var key = (e.which) ? e.which : e.keyCode;
+
+				console.log(key);
+
+				keyDown[key] = true;
+				return false;
+			}
+			
+			window.onkeyup = function(e) {
+				var key = (e.which) ? e.which : e.keyCode;
+
+				if(keyDown[key])
+					delete keyDown[key];
+				return false;
+			}
+			
+			canvas.onclick = function(event) {
+				var point = { x: event.layerX, y: event.layerY };
+				switch(state) {
+					case 0:
+						clickMainMenu(point);
+						break;
+				}
+			}
+			
+			initializeEverything(context);
+			
+			var last = 0;
+				
+			function mainLoop(timestamp) {
+				context.clearRect(0,0, screenSize.width, screenSize.height);
+				
+				var delta = timestamp - last;
+				last = timestamp;
+				
+				switch(state) {
+					case 0:
+						doMainMenu(delta, context);
+						break;
+				}
+
+				poweredBySprite.draw(context);
+			
+				window.requestAnimationFrame(mainLoop);
+			}
+
+			window.requestAnimationFrame(mainLoop);
+
+		};
+
+		// ------------------------------------------------------
+		
+		var backgroundSprite;
+		var textSprite;
+
+		function initializeEverything(context) {
+			initializeMainmenu(context);
+		}
+		
+		function initializeMainmenu(context) {
+			backgroundSprite = new colorSprite("black");
+			backgroundSprite.x = 0;
+			backgroundSprite.y = 0;
+			backgroundSprite.width = screenSize.width;
+			backgroundSprite.height = screenSize.height;
+
+			textSprite = new textSprite(context, "Hello World", "white", "50px");
+			textSprite.x = screenSize.width / 2 - textSprite.width / 2;
+			textSprite.y = screenSize.height / 2 - textSprite.height / 2;
+		}
+		
+		function doMainMenu(timestamp, context) {
+			backgroundSprite.draw(context);
+			textSprite.draw(context);
+		}
+		
+		function clickMainMenu(point) {
+		}
+	</script>
+</head>
+<body>
+	<canvas id="gamecanvas" width="900" height="700">
+	Your browser does not support HTML5 Canvas.
+	</canvas>
+</body>
+</html>
+
